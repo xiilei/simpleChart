@@ -2,7 +2,7 @@
 require __DIR__.'/src/xDraw.class.php';
 
 $xdraw = new \SimpleChart\xDraw(400,300);
-//$xdraw->Antialias = FALSE;
+$xdraw->Antialias = FALSE;
 
 $X=1.6;
 $Y=1.2;

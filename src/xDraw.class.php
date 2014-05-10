@@ -1,26 +1,25 @@
 <?php
 namespace SimpleChart;
 /**
- * xDraw.class.php ,简化的pDraw.class.php (pchart2) 
- * xilei
+ * use the same as pChart2
+ * 
+ * @author xilei
  */
-if (!extension_loaded('gd')) {
-    echo "GD extension must be loaded. \r\n";
-    exit();
-}
 
 define("PI", 3.14159265);
 
-class xDraw {
+class xDraw{
     
     //抗锯齿
-    public $Antialias = TRUE;
+    public $Antialias = true;
     public $AntialiasQuality = 0;//
+    
+    protected $UseAlpha = true;
 
     protected $XSize = NULL;
     protected $YSize = NULL;
-    public $Picture = NULL;
-    protected $TransparentBackground = FALSE;
+    protected $Picture = NULL;
+    protected $TransparentBackground = false;
     //字体
     protected $FontName = "";
     protected $FontSize = 12;
@@ -29,7 +28,7 @@ class xDraw {
     protected $FontColorB = 0;
     protected $FontColorA = NULL;
     //阴影
-    protected $Shadow = FALSE;
+    protected $Shadow = false;
     protected $ShadowX = NULL;
     protected $ShadowY = NULL;
     protected $ShadowR = NULL;
@@ -39,18 +38,18 @@ class xDraw {
     //extra
     protected $LineSize = 1;
 
-    public function __construct($XSize, $YSize, $TransparentBackground = FALSE) {
+    public function __construct($XSize, $YSize, $TransparentBackground = false) {
         $this->TransparentBackground = $TransparentBackground;
         $this->XSize = $XSize;
         $this->YSize = $YSize;
         $this->Picture = imagecreatetruecolor($XSize, $YSize);
         if ($this->TransparentBackground) {
-            imagealphablending($this->Picture, FALSE);
+            imagealphablending($this->Picture, false);
             imagefilledRectangle($this->Picture, 0, 0, $XSize, $YSize, imagecolorallocatealpha($this->Picture, 255, 255, 255, 127));
-            imagealphablending($this->Picture, TRUE);
+            imagealphablending($this->Picture, true);
             imagesavealpha($this->Picture, true);
         } else {
-            $C_White = self::allocateColor($this->Picture, 255, 255, 255);
+            $C_White = $this->allocateColor(255, 255, 255);
             imagefilledRectangle($this->Picture, 0, 0, $XSize, $YSize, $C_White);
         }
     }
@@ -60,7 +59,7 @@ class xDraw {
      * @param type $Enabled
      * @param type $Format
      */
-    public function setShadow($Enabled = TRUE, $Format = "") {
+    public function setShadow($Enabled = true, $Format = "") {
         $X = isset($Format["X"]) ? $Format["X"] : 2;
         $Y = isset($Format["Y"]) ? $Format["Y"] : 2;
         $R = isset($Format["R"]) ? $Format["R"] : 0;
@@ -78,6 +77,28 @@ class xDraw {
     }
     
     /**
+     * 启用/禁用alpha
+     * @param type $enable
+     */
+    public function useAlpha($enable=true){
+        if(!$enable){
+            $this->Antialias = false;//disabled antialias
+            $this->UseAlpha=false;
+        }else{
+            $this->UseAlpha=true;
+        }
+    }
+    
+    /**
+     * 使用/禁用 反锯齿
+     * @param type $enable
+     */
+    public function userAntialias($enable=true){
+        $this->Antialias = ($enable == true);
+    }
+
+
+    /**
      * 设置线宽
      * @param type $thickness
      * @return boolean
@@ -85,9 +106,8 @@ class xDraw {
     public function setLineSize($thickness) {
         if (is_numeric($thickness) && $thickness > 0) {
             $this->LineSize = $thickness;
-            return imagesetthickness($this->Picture, $thickness);
+            imagesetthickness($this->Picture, $thickness);
         }
-        return false;
     }
     
     /**
@@ -145,7 +165,7 @@ class xDraw {
 
         $RestoreShadow = $this->Shadow;
         if ($this->Shadow && $this->ShadowX != 0 && $this->ShadowY != 0) {
-            $this->Shadow = FALSE;
+            $this->Shadow = false;
             if ($PicType == 3) {
                 $this->drawFilledRectangle($X + $this->ShadowX, $Y + $this->ShadowY, $X + $Width + $this->ShadowX, $Y + $Height + $this->ShadowY, array("R" => $this->ShadowR, "G" => $this->ShadowG, "B" => $this->ShadowB, "Alpha" => $this->Shadowa));
             } else {
@@ -156,7 +176,7 @@ class xDraw {
                         $Values = imagecolorsforindex($Raster, $RGBa);
                         if ($Values["alpha"] < 120) {
                             $AlphaFactor = floor(($this->Shadowa / 100) * ((100 / 127) * (127 - $Values["alpha"])));
-                            $this->drawAlphaPixel($X + $Xc + $this->ShadowX, $Y + $Yc + $this->ShadowY, $AlphaFactor, $this->ShadowR, $this->ShadowG, $this->ShadowB);
+                            $this->drawAlphaPixel($X + $Xc + $this->ShadowX, $Y + $Yc + $this->ShadowY,array('Alpha'=>$AlphaFactor, 'R'=>$this->ShadowR, 'G'=>$this->ShadowG,'B'=>$this->ShadowB));
                         }
                     }
                 }
@@ -206,11 +226,11 @@ class xDraw {
         $Shadow = $this->Shadow;
 
         if ($this->Shadow && $this->ShadowX != 0 && $this->ShadowY != 0) {
-            $C_ShadowColor = self::allocateColor($this->Picture, $this->ShadowR, $this->ShadowG, $this->ShadowB, $this->Shadowa);
+            $C_ShadowColor = $this->allocateColor( $this->ShadowR, $this->ShadowG, $this->ShadowB, $this->Shadowa);
             imagettftext($this->Picture, $FontSize, $Angle, $X + $this->ShadowX, $Y + $this->ShadowY, $C_ShadowColor, $FontName, $Text);
         }
 
-        $C_TextColor = self::allocateColor($this->Picture, $R, $G, $B, $Alpha);
+        $C_TextColor = $this->allocateColor( $R, $G, $B, $Alpha);
         imagettftext($this->Picture, $FontSize, $Angle, $X, $Y, $C_TextColor, $FontName, $Text);
 
         $this->Shadow = $Shadow;
@@ -231,12 +251,12 @@ class xDraw {
         $Alpha = isset($Format["Alpha"]) ? $Format["Alpha"] : 100;
         $RestoreShadow = $this->Shadow;
         if ($this->Shadow && $this->ShadowX != 0 && $this->ShadowY != 0) {
-            $this->Shadow = FALSE;
+            $this->Shadow = false;
             $this->drawCircle($Xc + $this->ShadowX, $Yc + $this->ShadowY, $Width, $Height, array("R" => $this->ShadowR, "G" => $this->ShadowG, "B" => $this->ShadowB, "Alpha" => $this->Shadowa));
         }
         
         if(!$this->Antialias){
-            $C_color = self::allocateColor($this->Picture, $R, $G, $B, $Alpha);
+            $C_color = $this->allocateColor( $R, $G, $B, $Alpha);
             imageellipse($this->Picture, $Xc, $Yc, $Width<<1, $Height<<1, $C_color);
         }else{
             if ( $Width == 0 ) { $Width = $Height; }
@@ -245,12 +265,11 @@ class xDraw {
             if ( $B < 0 ) { $B = 0; } if ( $B > 255 ) { $B = 255; }
 
             $Step = 360 / (2 * PI * max($Width,$Height));
-            for($i=0;$i<=360;$i=$i+$Step)
-             {
+            for($i=0;$i<=360;$i=$i+$Step){
               $Y = cos($i*PI/180) * $Height + $Yc;
               $X = sin($i*PI/180) * $Width + $Xc;
               $this->drawAntialiasPixel($X,$Y,array("R"=>$R,"G"=>$G,"B"=>$B,"Alpha"=>$Alpha));
-             }
+            }
         }
         $this->Shadow = $RestoreShadow;
     }
@@ -274,10 +293,10 @@ class xDraw {
         
         $RestoreShadow = $this->Shadow;
         if ($this->Shadow && $this->ShadowX != 0 && $this->ShadowY != 0) {
-            $this->Shadow = FALSE;
+            $this->Shadow = false;
             $this->drawFilledCircle($X + $this->ShadowX, $Y + $this->ShadowY, $Width, $Height, array("R" => $this->ShadowR, "G" => $this->ShadowG, "B" => $this->ShadowB, "Alpha" => $this->Shadowa));
         }
-        $Color = self::allocateColor($this->Picture, $R, $G, $B, $Alpha);
+        $Color = $this->allocateColor( $R, $G, $B, $Alpha);
 
         imagefilledellipse($this->Picture, $X, $Y, $Width<<1, $Height<<1, $Color);
         if ( $this->Antialias ){
@@ -299,7 +318,7 @@ class xDraw {
        // $BorderG = isset($Format["BorderG"]) ? $Format["BorderG"] : -1;
        // $BorderB = isset($Format["BorderB"]) ? $Format["BorderB"] : -1;
        // $BorderAlpha = isset($Format["BorderAlpha"]) ? $Format["BorderAlpha"] : $Alpha;
-        imagefilledarc($this->Picture,$X,$Y,$Width,$Height,$start,$end,$this->allocateColor($this->Picture, $R, $G, $B,$Alpha),IMG_ARC_PIE);
+        imagefilledarc($this->Picture,$X,$Y,$Width,$Height,$start,$end,$this->allocateColor( $R, $G, $B,$Alpha),IMG_ARC_PIE);
     }
     
     public function drawArc(){
@@ -326,10 +345,10 @@ class xDraw {
 
         $RestoreShadow = $this->Shadow;
         if ($this->Shadow && $this->ShadowX != 0 && $this->ShadowY != 0) {
-            $this->Shadow = FALSE;
+            $this->Shadow = false;
             $this->drawFilledRectangle($X1 + $this->ShadowX, $Y1 + $this->ShadowY, $X2 + $this->ShadowX, $Y2 + $this->ShadowY, array("R" => $this->ShadowR, "G" => $this->ShadowG, "B" => $this->ShadowB, "Alpha" => $this->Shadowa));
         }
-        $Color = $this->allocateColor($this->Picture, $R, $G, $B, $Alpha);
+        $Color = $this->allocateColor( $R, $G, $B, $Alpha);
         imagefilledrectangle($this->Picture, ceil($X1), ceil($Y1), floor($X2), floor($Y2), $Color);
         if ($BorderR != -1) {
             $this->drawRectangle($X1, $Y1, $X2, $Y2, array("R" => $BorderR, "G" => $BorderG, "B" => $BorderB, "Alpha" => $BorderAlpha));
@@ -350,7 +369,7 @@ class xDraw {
         $G = isset($Format["G"]) ? $Format["G"] : 0;
         $B = isset($Format["B"]) ? $Format["B"] : 0;
         $Alpha = isset($Format["Alpha"]) ? $Format["Alpha"] : 100;
-        $Color = $this->allocateColor($this->Picture, $R, $G, $B, $Alpha);
+        $Color = $this->allocateColor( $R, $G, $B, $Alpha);
         imagerectangle($this->Picture, $X1, $Y1, $X2, $Y2, $Color);
     }
     
@@ -367,21 +386,38 @@ class xDraw {
         $G = isset($Format["G"]) ? $Format["G"] : 0;
         $B = isset($Format["B"]) ? $Format["B"] : 0;
         $Alpha = isset($Format["Alpha"]) ? $Format["Alpha"] : 100;
-        $Style = isset($Format["Style"]) ? $Format["Style"] : -1;
+        $Style = isset($Format["Style"]) ? $Format["Style"] : -1;//just for no Antialias
+        
+        $RestoreShadow = $this->Shadow;
         if ($this->Shadow && $this->ShadowX != 0 && $this->ShadowY != 0) {
-            $ShadowColor = $this->allocateColor($this->Picture, $this->ShadowR, $this->ShadowG, $this->ShadowB, $this->Shadowa);
+            $this->Shadow = false;
+            $ShadowColor = $this->allocateColor( $this->ShadowR, $this->ShadowG, $this->ShadowB, $this->Shadowa);
             imageline($this->Picture, $X1 + $this->ShadowX, $Y1 + $this->ShadowY, $X2 + $this->ShadowX, $Y2 + $this->ShadowY, $ShadowColor);
         }
-        if (is_array($Style)) {
-            imagesetstyle($this->Picture, $Style);
-            imageline($this->Picture, $X1, $Y1, $X2, $Y2, IMG_COLOR_STYLED);
-        } elseif (is_resource($Style)) {
-            imagesetbrush($this->Picture, $Style);
-            imageline($this->Picture, $X1, $Y1, $X2, $Y2, IMG_COLOR_STYLEDBRUSHE);
-        } else {
-            $Color = $this->allocateColor($this->Picture, $R, $G, $B, $Alpha);
-            imageline($this->Picture, $X1, $Y1, $X2, $Y2, $Color);
+        
+        $Color = $this->allocateColor( $R, $G, $B, $Alpha);
+        //仅仅在斜线的时候需要
+        if($this->Antialias && !($X1==$X2 || $Y1 == $Y2)){
+           $distance = sqrt(pow($X2-$X1,2)+pow($Y2-$Y1,2));
+           $xstep = ($X2-$X1)/$distance;
+           $ystep = ($Y2-$Y1)/$distance;
+           for($i=0;$i<$distance;$i++){
+              $X = $i*$xstep + $X1;
+              $Y = $i*$ystep + $Y1;
+              $this->drawAntialiasPixel($X,$Y,$Color);
+           }
+        }else{
+           if (is_array($Style)) {
+              imagesetstyle($this->Picture, $Style);
+              imageline($this->Picture, $X1, $Y1, $X2, $Y2, IMG_COLOR_STYLED);
+           } elseif (is_resource($Style)) {
+              imagesetbrush($this->Picture, $Style);
+              imageline($this->Picture, $X1, $Y1, $X2, $Y2, IMG_COLOR_STYLEDBRUSHE);
+           } else {                
+              imageline($this->Picture, $X1, $Y1, $X2, $Y2, $Color);
+           }
         }
+        $this->Shadow = $RestoreShadow;
     }
     
     /**
@@ -395,8 +431,8 @@ class xDraw {
         $G = isset($Format["G"]) ? $Format["G"] : 0;
         $B = isset($Format["B"]) ? $Format["B"] : 0;
         $Alpha = isset($Format["Alpha"]) ? $Format["Alpha"] : 100;
-        $NoFill = isset($Format["NoFill"]) ? $Format["NoFill"] : FALSE;
-        $NoBorder = isset($Format["NoBorder"]) ? $Format["NoBorder"] : FALSE;
+        $NoFill = isset($Format["NoFill"]) ? $Format["NoFill"] : false;
+        $NoBorder = isset($Format["NoBorder"]) ? $Format["NoBorder"] : false;
         $BorderR = isset($Format["BorderR"]) ? $Format["BorderR"] : $R;
         $BorderG = isset($Format["BorderG"]) ? $Format["BorderG"] : $G;
         $BorderB = isset($Format["BorderB"]) ? $Format["BorderB"] : $B;
@@ -404,33 +440,44 @@ class xDraw {
 
         $Backup = $Points;
         $count = count($Points);
+        $RestoreShadow = $this->Shadow;
         if ($count < 6) return false;
         if (!$NoFill) {
             if ($this->Shadow && $this->ShadowX != 0 && $this->ShadowY != 0) {
-                $this->Shadow = FALSE;
+                $this->Shadow = false;
                 for ($i = 0; $i < $count; $i = $i + 2) {
                     $Shadow[] = $Points[$i] + $this->ShadowX;
                     $Shadow[] = $Points[$i + 1] + $this->ShadowY;
                 }
-                $this->drawPolygon($Shadow, array("R" => $this->ShadowR, "G" => $this->ShadowG, "B" => $this->ShadowB, "Alpha" => $this->Shadowa, "NoBorder" => TRUE));
+                $this->drawPolygon($Shadow, array("R" => $this->ShadowR, "G" => $this->ShadowG, "B" => $this->ShadowB, "Alpha" => $this->Shadowa, "NoBorder" => true));
             }
-            $FillColor = self::allocateColor($this->Picture, $R, $G, $B, $Alpha);
+            $FillColor = $this->allocateColor( $R, $G, $B, $Alpha);
             imagefilledpolygon($this->Picture, $Points, $count / 2, $FillColor);
         }
         if (!$NoBorder) {
             $Points = $Backup;
-            $BorderColor = "";
-            if ($NoFill) {
-                $BorderColor = self::allocateColor($this->Picture, $R, $G, $B, $Alpha);
-            } else {
-                $BorderColor = self::allocateColor($this->Picture, $BorderR, $BorderG, $BorderB, $BorderAlpha);
+            if($this->Antialias){
+                $LFormat =  $NoFill ? array('Alpha'=>$BorderAlpha,'R'=>$BorderR,'G'=>$BorderG,'B'=>$BorderB) :
+                array('Alpha'=>$BorderAlpha,'R'=>$BorderR,'G'=>$BorderG,'B'=>$BorderB);
+                for($i=0;$i < $count; $i = $i + 2){
+                    if(!isset($Points[$i+2])){
+                        $this->drawLine($Points[$i], $Points[$i+1], $Points[0], $Points[1],$LFormat);
+                        break;
+                    }
+                    $this->drawLine($Points[$i], $Points[$i+1], $Points[$i+2], $Points[$i+3],$LFormat);
+                }
+            }else{
+                $BorderColor = $NoFill ? $this->allocateColor( $R, $G, $B, $Alpha) :
+                $this->allocateColor( $BorderR, $BorderG, $BorderB, $BorderAlpha);
+                imagepolygon($this->Picture, $Points, $count / 2, $BorderColor);
             }
-            imagepolygon($this->Picture, $Points, $count / 2, $BorderColor);
         }
+        
+        $this->Shadow = $RestoreShadow;
     }
     
     /**
-     * 
+     * 像素点
      * @param type $X
      * @param type $Y
      * @param type $Format
@@ -448,15 +495,15 @@ class xDraw {
         if ($B < 0) {$B = 0;} if ($B > 255) {$B = 255;}
         if ($this->Shadow && $this->ShadowX != 0 && $this->ShadowY != 0) {
             $AlphaFactor = floor(($Alpha / 100) * $this->Shadowa);
-            $ShadowColor = self::allocateColor($this->Picture, $this->ShadowR, $this->ShadowG, $this->ShadowB, $AlphaFactor);
+            $ShadowColor = $this->allocateColor( $this->ShadowR, $this->ShadowG, $this->ShadowB, $AlphaFactor);
             imagesetpixel($this->Picture, $X + $this->ShadowX, $Y + $this->ShadowY, $ShadowColor);
         }
-        $C_Aliased = self::allocateColor($this->Picture, $R, $G, $B, $Alpha);
+        $C_Aliased = $this->allocateColor( $R, $G, $B, $Alpha);
         imagesetpixel($this->Picture, $X, $Y, $C_Aliased);
     }
     
     /**
-     * 
+     * 抗锯齿像素点
      * @param type $X
      * @param type $Y
      * @param type $Format
@@ -522,7 +569,7 @@ class xDraw {
         }
     }
 
-    public function stroke($BrowserExpire = FALSE,$type="png") {
+    public function stroke($BrowserExpire = false,$type="png") {
         if ($this->TransparentBackground) {
             imagealphablending($this->Picture, false);
             imagesavealpha($this->Picture, true);
@@ -544,13 +591,46 @@ class xDraw {
         }
         
     }
+    
+     /**
+     * alpha颜色
+     * @param type $R
+     * @param type $G
+     * @param type $B
+     * @param type $Alpha
+     * @return type
+     */
+    public function allocateColor($R, $G, $B, $Alpha = 100) {
+        if ($R < 0) {$R = 0;} if ($R > 255) {$R = 255;}
+        if ($G < 0) {$G = 0;} if ($G > 255) {$G = 255;}
+        if ($B < 0) {$B = 0;} if ($B > 255) {$B = 255;}
+        if ($Alpha < 0) {$Alpha = 0;}
+        if ($Alpha > 100) {$Alpha = 100;}
 
-    public function __destruct() {
-        if (!empty($this->Picture))
-            imagedestroy($this->Picture);
+        $Alpha = (127 / 100) * (100 - $Alpha);
+        return ($this->UseAlpha ? imagecolorallocatealpha($this->Picture, $R, $G, $B, $Alpha)
+            :  imagecolorallocate($this->Picture, $R, $G, $B));
     }
 
-    public static function getPicInfo($FileName) {
+    public function __destruct() {
+        if (!empty($this->Picture)){
+            imagedestroy($this->Picture);
+        }
+    }
+    
+    /**
+     * hex to rgb
+     */
+    static public function toRGB(){
+        
+    }
+    
+    /**
+     * 图片信息
+     * @param type $FileName
+     * @return type
+     */
+    static public function getPicInfo($FileName) {
         $Infos = getimagesize($FileName);
         $Width = $Infos[0];
         $Height = $Infos[1];
@@ -568,8 +648,11 @@ class xDraw {
 
         return(array($Width, $Height, $Type));
     }
-
-    public static function getTextBox($Text, $FontSize, $FontFile, $FontAngle) {
+    
+    /**
+     * 文字信息
+     */
+    static public function getTextBox($Text, $FontSize, $FontFile, $FontAngle) {
         $Rect = imagettfbbox($FontSize, $FontAngle, $FontFile, $Text);
         $MinX = min(array($Rect[0], $Rect[2], $Rect[4], $Rect[6]));
         $MaxX = max(array($Rect[0], $Rect[2], $Rect[4], $Rect[6]));
@@ -583,17 +666,7 @@ class xDraw {
             "height" => $MaxY - $MinY,
             "box" => $Rect
         );
-    }
-
-    public static function allocateColor($Picture, $R, $G, $B, $Alpha = 100) {
-        if ($R < 0) {$R = 0;} if ($R > 255) {$R = 255;}
-        if ($G < 0) {$G = 0;} if ($G > 255) {$G = 255;}
-        if ($B < 0) {$B = 0;} if ($B > 255) {$B = 255;}
-        if ($Alpha < 0) {$Alpha = 0;}
-        if ($Alpha > 100) {$Alpha = 100;}
-
-        $Alpha = (127 / 100) * (100 - $Alpha);
-        return(imagecolorallocatealpha($Picture, $R, $G, $B, $Alpha));
-    }
+    }  
+   
 
 }

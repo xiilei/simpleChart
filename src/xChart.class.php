@@ -1,7 +1,7 @@
 <?php
 namespace SimpleChart;
 /**
- * Description of xChart
+ * @todo 图表库 based on xDraw
  *
  * @author xilei
  */
