@@ -457,8 +457,7 @@ class xDraw{
         if (!$NoBorder) {
             $Points = $Backup;
             if($this->Antialias){
-                $LFormat =  $NoFill ? array('Alpha'=>$BorderAlpha,'R'=>$BorderR,'G'=>$BorderG,'B'=>$BorderB) :
-                array('Alpha'=>$BorderAlpha,'R'=>$BorderR,'G'=>$BorderG,'B'=>$BorderB);
+                $LFormat = array('Alpha'=>$BorderAlpha,'R'=>$BorderR,'G'=>$BorderG,'B'=>$BorderB);
                 for($i=0;$i < $count; $i = $i + 2){
                     if(!isset($Points[$i+2])){
                         $this->drawLine($Points[$i], $Points[$i+1], $Points[0], $Points[1],$LFormat);
