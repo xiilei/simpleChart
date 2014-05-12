@@ -1,18 +1,21 @@
 <?php
 namespace SimpleChart;
 /**
- * use the same as pChart2
+ * use the same as pDraw,based on GD2
+ * this is a free software!
  * 
+ * 支持line,arc,image,rect,text,eclipse,beziercurve(future features)
+ * 支持阴影,反锯齿
+ * 
+ * @license http://www.apache.org/licenses/LICENSE-2.0
  * @author xilei
  */
-
-define("PI", 3.14159265);
 
 class xDraw{
     
     //抗锯齿
-    public $Antialias = true;
-    public $AntialiasQuality = 0;//
+    protected $Antialias = true;
+    public $AntialiasQuality = 0;//0-100
     
     protected $UseAlpha = true;
 
@@ -97,7 +100,7 @@ class xDraw{
         $this->Antialias = ($enable == true);
     }
 
-
+    
     /**
      * 设置线宽
      * @param type $thickness
@@ -169,6 +172,7 @@ class xDraw{
             if ($PicType == 3) {
                 $this->drawFilledRectangle($X + $this->ShadowX, $Y + $this->ShadowY, $X + $Width + $this->ShadowX, $Y + $Height + $this->ShadowY, array("R" => $this->ShadowR, "G" => $this->ShadowG, "B" => $this->ShadowB, "Alpha" => $this->Shadowa));
             } else {
+                // ...
                 $TranparentID = imagecolortransparent($Raster);
                 for ($Xc = 0; $Xc <= $Width - 1; $Xc++) {
                     for ($Yc = 0; $Yc <= $Height - 1; $Yc++) {
@@ -264,11 +268,13 @@ class xDraw{
             if ( $G < 0 ) { $G = 0; } if ( $G > 255 ) { $G = 255; }
             if ( $B < 0 ) { $B = 0; } if ( $B > 255 ) { $B = 255; }
 
-            $Step = 360 / (2 * PI * max($Width,$Height));
+            $Step = 360 / (2 * M_PI * max($Width,$Height));
+            $PFotmat = array("R"=>$R,"G"=>$G,"B"=>$B,"Alpha"=>$Alpha);
             for($i=0;$i<=360;$i=$i+$Step){
-              $Y = cos($i*PI/180) * $Height + $Yc;
-              $X = sin($i*PI/180) * $Width + $Xc;
-              $this->drawAntialiasPixel($X,$Y,array("R"=>$R,"G"=>$G,"B"=>$B,"Alpha"=>$Alpha));
+              //这里把sin cos交换不影响绘图
+              $Y = cos($i*M_PI/180) * $Height + $Yc;
+              $X = sin($i*M_PI/180) * $Width + $Xc;
+              $this->drawAntialiasPixel($X,$Y,$PFotmat);
             }
         }
         $this->Shadow = $RestoreShadow;
@@ -296,6 +302,11 @@ class xDraw{
             $this->Shadow = false;
             $this->drawFilledCircle($X + $this->ShadowX, $Y + $this->ShadowY, $Width, $Height, array("R" => $this->ShadowR, "G" => $this->ShadowG, "B" => $this->ShadowB, "Alpha" => $this->Shadowa));
         }
+        
+        if ($BorderR != -1) {
+            $this->drawCircle($X, $Y, $Width, $Height, array("R" => $BorderR, "G" => $BorderG, "B" => $BorderB, "Alpha" => $BorderAlpha));
+        }
+        
         $Color = $this->allocateColor( $R, $G, $B, $Alpha);
 
         imagefilledellipse($this->Picture, $X, $Y, $Width<<1, $Height<<1, $Color);
@@ -303,28 +314,106 @@ class xDraw{
            $this->drawCircle($X,$Y,$Width,$Height,array("R"=>$R,"G"=>$G,"B"=>$B,"Alpha"=>$Alpha));
         }
         
-        if ($BorderR != -1) {
-            $this->drawCircle($X, $Y, $Width, $Height, array("R" => $BorderR, "G" => $BorderG, "B" => $BorderB, "Alpha" => $BorderAlpha));
-        }
         $this->Shadow = $RestoreShadow;
     }
     
-    public function drawFilledArc($X,$Y,$Width,$Height,$start,$end,$Format=''){
+    /**
+     * 填充圆弧
+     * @param type $X
+     * @param type $Y
+     * @param type $Width
+     * @param type $Height
+     * @param type $Start
+     * @param type $End
+     * @param type $Format
+     */
+    public function drawFilledArc($X,$Y,$Width,$Height,$Start,$End,$Format=''){
         $R = isset($Format["R"]) ? $Format["R"] : 0;
         $G = isset($Format["G"]) ? $Format["G"] : 0;
         $B = isset($Format["B"]) ? $Format["B"] : 0;
         $Alpha = isset($Format["Alpha"]) ? $Format["Alpha"] : 100;
-       // $BorderR = isset($Format["BorderR"]) ? $Format["BorderR"] : -1;
-       // $BorderG = isset($Format["BorderG"]) ? $Format["BorderG"] : -1;
-       // $BorderB = isset($Format["BorderB"]) ? $Format["BorderB"] : -1;
-       // $BorderAlpha = isset($Format["BorderAlpha"]) ? $Format["BorderAlpha"] : $Alpha;
-        imagefilledarc($this->Picture,$X,$Y,$Width,$Height,$start,$end,$this->allocateColor( $R, $G, $B,$Alpha),IMG_ARC_PIE);
+        $BorderR = isset($Format["BorderR"]) ? $Format["BorderR"] : -1;
+        $BorderG = isset($Format["BorderG"]) ? $Format["BorderG"] : -1;
+        $BorderB = isset($Format["BorderB"]) ? $Format["BorderB"] : -1;
+        $BorderAlpha = isset($Format["BorderAlpha"]) ? $Format["BorderAlpha"] : $Alpha;
+        
+        $RestoreShadow = $this->Shadow;
+        if($this->Shadow && $this->ShadowX!=0 && $this->ShadowY!=0){
+            $this->Shadow = false;
+            //这里简单处理(
+            $this->drawFilledArc($X+$this->ShadowX, $Y+$this->ShadowY, $Width, $Height, $Start, $End,
+                array("R" => $this->ShadowR, "G" => $this->ShadowG, "B" => $this->ShadowB, "Alpha" => $this->Shadowa));
+        }       
+        
+        $Color = $this->allocateColor( $R, $G, $B,$Alpha);
+        imagefilledarc($this->Picture,$X,$Y,$Width<<1,$Height<<1,$Start,$End,$Color,IMG_ARC_PIE);
+        
+        if($this->Antialias){
+            $this->drawArc($X,$Y,$Width,$Height,$Start,$End,array("Border"=>true,'R'=>$R,'G'=>$G,'B'=>$B,'Alpha'=>$Alpha));
+        }
+        
+        if ($BorderR != -1) {
+            $this->drawArc($X, $Y, $Width, $Height, $Start, $End,array("R" => $BorderR, "G" => $BorderG, "B" => $BorderB, "Alpha" => $BorderAlpha));
+        }
+        
+        $this->Shadow = $RestoreShadow;
     }
     
-    public function drawArc(){
+    /**
+     * 圆弧(顺时针方向)
+     * @param type $Xc
+     * @param type $Yc
+     * @param type $Width
+     * @param type $Height
+     * @param type $Start
+     * @param type $End
+     * @param type $Format
+     */
+    public function drawArc($Xc,$Yc,$Width,$Height,$Start,$End,$Format=''){
+        $R = isset($Format["R"]) ? $Format["R"] : 0;
+        $G = isset($Format["G"]) ? $Format["G"] : 0;
+        $B = isset($Format["B"]) ? $Format["B"] : 0;
+        //是否绘制边侧
+        $Border = isset($Format['Border']) ? $Format['Border'] : false;
+        $Alpha = isset($Format["Alpha"]) ? $Format["Alpha"] : 100;
+        
+        $RestoreShadow = $this->Shadow;
+        if($this->Shadow && $this->ShadowX!=0 && $this->ShadowY!=0){
+            $this->Shadow = false;
+            $this->drawArc($Xc+$this->ShadowX, $Yc+$this->ShadowY, $Width, $Height, $Start, $End,
+                    array("R" => $this->ShadowR, "G" => $this->ShadowG, "B" => $this->ShadowB, "Alpha" => $this->Shadowa,'Border'=>$Border));
+        }
+        $Color = $this->allocateColor($R, $G, $B,$Alpha);
+            
+        if($this->Antialias){
+            $Step = 360 / (2 * M_PI * max($Width,$Height));
+            $End = $End>=$Start ? $End : 360+$End;
+            $PFormat = array("R"=>$R,"G"=>$G,"B"=>$B,"Alpha"=>$Alpha);
+            for($i=$Start;$i<=$End;$i=$i+$Step){
+              $Y = sin($i*M_PI/180) * $Height + $Yc;
+              $X = cos($i*M_PI/180) * $Width + $Xc;
+              $this->drawAntialiasPixel($X,$Y,$PFormat);
+            }
+        }else{
+            imagearc($this->Picture, $Xc, $Yc, $Width<<1, $Height<<1, $Start, $End, $Color);
+        }
+        
+        if($Border){
+            $LineFormat = array('R'=>$R,'G'=>$G,'B'=>$B,'Alpha'=>$Alpha);
+            $this->drawLine($Xc, $Yc, cos($Start*M_PI/180) * $Width + $Xc, sin($Start*M_PI/180) * $Height + $Yc,$LineFormat);
+            $this->drawLine($Xc, $Yc, cos($End*M_PI/180) * $Width + $Xc, sin($End*M_PI/180) * $Height + $Yc,$LineFormat);
+        }
+        $this->Shadow = $RestoreShadow; 
+       
+    }
+    
+    /**
+     * @todo 贝塞尔曲线
+     */
+    public function drawBeziercurve(){
         
     }
-    
+
     /**
      * 填充矩形
      * @param type $X1
@@ -395,16 +484,16 @@ class xDraw{
             imageline($this->Picture, $X1 + $this->ShadowX, $Y1 + $this->ShadowY, $X2 + $this->ShadowX, $Y2 + $this->ShadowY, $ShadowColor);
         }
         
-        $Color = $this->allocateColor( $R, $G, $B, $Alpha);
         //仅仅在斜线的时候需要
         if($this->Antialias && !($X1==$X2 || $Y1 == $Y2)){
            $distance = sqrt(pow($X2-$X1,2)+pow($Y2-$Y1,2));
            $xstep = ($X2-$X1)/$distance;
            $ystep = ($Y2-$Y1)/$distance;
+           $PFormat = array('R'=>$R,'G'=>$G,'B'=>$B,'Alpha'=>$Alpha);
            for($i=0;$i<$distance;$i++){
               $X = $i*$xstep + $X1;
               $Y = $i*$ystep + $Y1;
-              $this->drawAntialiasPixel($X,$Y,$Color);
+              $this->drawAntialiasPixel($X,$Y,$PFormat);
            }
         }else{
            if (is_array($Style)) {
@@ -413,7 +502,8 @@ class xDraw{
            } elseif (is_resource($Style)) {
               imagesetbrush($this->Picture, $Style);
               imageline($this->Picture, $X1, $Y1, $X2, $Y2, IMG_COLOR_STYLEDBRUSHE);
-           } else {                
+           } else {
+              $Color = $this->allocateColor( $R, $G, $B, $Alpha);
               imageline($this->Picture, $X1, $Y1, $X2, $Y2, $Color);
            }
         }
@@ -487,8 +577,9 @@ class xDraw{
         $G = isset($Format["G"]) ? $Format["G"] : 0;
         $B = isset($Format["B"]) ? $Format["B"] : 0;
         $Alpha = isset($Format["Alpha"]) ? $Format["Alpha"] : 100;
-        if ($X < 0 || $Y < 0 || $X >= $this->XSize || $Y >= $this->YSize)
+        if ($X < 0 || $Y < 0 || $X >= $this->XSize || $Y >= $this->YSize){
             return false;
+        }
         if ($R < 0) {$R = 0;} if ($R > 255) {$R = 255;}
         if ($G < 0) { $G = 0;} if ($G > 255) {$G = 255;}
         if ($B < 0) {$B = 0;} if ($B > 255) {$B = 255;}
@@ -526,16 +617,21 @@ class xDraw{
           $this->drawAlphaPixel($X,$Y,array('Alpha'=>$Alpha,'R'=>$R,'G'=>$G,'B'=>$B));
         }else{
           $Alpha1 = (1 - ($X - $Xi)) * (1 - ($Y - $Yi)) * $Alpha;
-          if ( $Alpha1 > $this->AntialiasQuality ) { $this->drawAlphaPixel($Xi,$Yi,array('Alpha'=>$Alpha1,'R'=>$R,'G'=>$G,'B'=>$B)); }
-
+          if ( $Alpha1 > $this->AntialiasQuality ) {
+              $this->drawAlphaPixel($Xi,$Yi,array('Alpha'=>$Alpha1,'R'=>$R,'G'=>$G,'B'=>$B)); 
+          }
           $Alpha2 = ($X - $Xi) * (1 - ($Y - $Yi)) * $Alpha;
-          if ( $Alpha2 > $this->AntialiasQuality ) { $this->drawAlphaPixel($Xi+1,$Yi,array('Alpha'=>$Alpha2,'R'=>$R,'G'=>$G,'B'=>$B));}
-
+          if ( $Alpha2 > $this->AntialiasQuality ) {
+              $this->drawAlphaPixel($Xi+1,$Yi,array('Alpha'=>$Alpha2,'R'=>$R,'G'=>$G,'B'=>$B));
+          }
           $Alpha3 = (1 - ($X - $Xi)) * ($Y - $Yi)  * $Alpha;
-          if ( $Alpha3 > $this->AntialiasQuality ) { $this->drawAlphaPixel($Xi,$Yi+1,array('Alpha'=>$Alpha3,'R'=>$R,'G'=>$G,'B'=>$B)); }
-
+          if ( $Alpha3 > $this->AntialiasQuality ) {
+              $this->drawAlphaPixel($Xi,$Yi+1,array('Alpha'=>$Alpha3,'R'=>$R,'G'=>$G,'B'=>$B)); 
+          }
           $Alpha4 = ($X - $Xi) * ($Y - $Yi) * $Alpha;
-          if ( $Alpha4 > $this->AntialiasQuality ) { $this->drawAlphaPixel($Xi+1,$Yi+1,array('Alpha'=>$Alpha4,'R'=>$R,'G'=>$G,'B'=>$B)); }
+          if ( $Alpha4 > $this->AntialiasQuality ) {
+              $this->drawAlphaPixel($Xi+1,$Yi+1,array('Alpha'=>$Alpha4,'R'=>$R,'G'=>$G,'B'=>$B));
+           }
          }
     }
 
@@ -615,13 +711,6 @@ class xDraw{
         if (!empty($this->Picture)){
             imagedestroy($this->Picture);
         }
-    }
-    
-    /**
-     * hex to rgb
-     */
-    static public function toRGB(){
-        
     }
     
     /**
