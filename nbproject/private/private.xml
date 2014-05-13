@@ -2,12 +2,6 @@
 <project-private xmlns="http://www.netbeans.org/ns/project-private/1">
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
-        <group>
-            <file>file:/home/xilei/work/simpleChart/tests/polygon.php</file>
-            <file>file:/home/xilei/work/simpleChart/tests/line.php</file>
-            <file>file:/home/xilei/work/simpleChart/src/xUtil.class.php</file>
-            <file>file:/home/xilei/work/simpleChart/src/xChart.class.php</file>
-            <file>file:/home/xilei/work/simpleChart/src/xDraw.class.php</file>
-        </group>
+        <group/>
     </open-files>
 </project-private>

@@ -1,4 +1,5 @@
 <?php
+namespace SimpleChart;
 /**
  * Description of xUtil
  *
@@ -21,12 +22,17 @@ class xUtil {
      * @param type $hex
      * @return array
      */
-    static public function hex2RGB($hex){
+    static public function hex2RGB($hex,$alpha=100){
         if(empty($hex)){
-            return array('R'=>0,'G'=>0,'B'=>0);
+            return empty($alpha) ? array('R'=>0,'G'=>0,'B'=>0)
+                  :array('R'=>0,'G'=>0,'B'=>0,'Alpha'=>$alpha);
         }
         if(isset(static::$NameColors[$hex])){
-            return static::$NameColors[$hex];
+            $color = static::$NameColors[$hex];
+            if(!empty($alpha)){
+                $color['Alpha']=$alpha;
+            }
+            return $color;
         }
         $hex = str_replace('#','',$hex);
         $len = strlen($hex);
@@ -38,11 +44,15 @@ class xUtil {
             }
         }else{
             if($len <6){
-                $hex = str_pad($hex,6,'0',STR_PAD_RIGHT);
+               $hex = str_pad($hex,6,'0',STR_PAD_RIGHT);
             }
             $hexarr = str_split($hex,2);
         }
-        return array('R'=>hexdec($hexarr[0]),
+        $color = array('R'=>hexdec($hexarr[0]),
         'G'=>hexdec($hexarr[1]),'B'=>hexdec($hexarr[2]));
+        if(!empty($alpha)){
+            $color['Alpha'] = $alpha;
+        }
+        return $color;
     }
 }
