@@ -3,3 +3,4 @@
 基于GD, 反锯齿绘图库 (@see pChart2,http://my.oschina.net/empty125/blog/262796 )
 
 (use like pDraw)
+![demo](http://open-x.droppages.com/demo.png)
