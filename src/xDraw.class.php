@@ -234,7 +234,6 @@ class xDraw{
             imagettftext($this->Image, $FontSize, $Angle, $X + $this->ShadowFormat['X'], $Y + $this->ShadowFormat['Y'], $C_ShadowColor, $FontName, $Text);
             unset($ShadowColor,$C_ShadowColor);
         }
-
         $C_TextColor = $this->allocateColor($Color);
         imagettftext($this->Image, $FontSize, $Angle, $X, $Y, $C_TextColor, $FontName, $Text);
 
@@ -341,7 +340,7 @@ class xDraw{
         }
         
         if (!empty($BorderColor)) {
-            $this->drawArc($X, $Y, $Width, $Height, $Start, $End,array('Color'=>$BorderColor));
+            $this->drawArc($X, $Y, $Width, $Height, $Start, $End,array('Color'=>$BorderColor,'Border'=>true));
         }
         
         $this->Shadow = $RestoreShadow;
