@@ -115,7 +115,7 @@ class xDraw{
      * 使用/禁用 反锯齿
      * @param type $enable
      */
-    public function userAntialias($enable=true){
+    public function useAntialias($enable=true){
         $this->Antialias = ($enable == true);
     }
 
